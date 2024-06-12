@@ -58,10 +58,10 @@ class TBConfig(object):
             self.my              = config_kvp.get('my', '')
             
             # gift counter
-            self.cx1             = config_kvp.get('cx1', '')
-            self.cy1             = config_kvp.get('cy1', '')
-            self.cx2             = config_kvp.get('cx2', '')
-            self.cy2             = config_kvp.get('cy2', '')
+            #self.cx1             = config_kvp.get('cx1', '')
+            #self.cy1             = config_kvp.get('cy1', '')
+            #self.cx2             = config_kvp.get('cx2', '')
+            #self.cy2             = config_kvp.get('cy2', '')
             
             # clan click
             self.ax              = config_kvp.get('ax', '')
@@ -70,18 +70,26 @@ class TBConfig(object):
             # gift tab
             self.bx              = config_kvp.get('bx', '')
             self.by              = config_kvp.get('by', '')
+            self.ex              = config_kvp.get('ex', '')
+            self.ey              = config_kvp.get('ey', '')
             
             # triumphal gift tab
             self.dx              = config_kvp.get('dx', '')
             self.dy              = config_kvp.get('dy', '')
             
             # triumphal gift counter
-            self.dx1             = config_kvp.get('dx1', '')
-            self.dy1             = config_kvp.get('dy1', '')
-            self.dx2             = config_kvp.get('dx2', '')
-            self.dy2             = config_kvp.get('dy2', '')
+            #self.dx1             = config_kvp.get('dx1', '')
+            #self.dy1             = config_kvp.get('dy1', '')
+            #self.dx2             = config_kvp.get('dx2', '')
+            #self.dy2             = config_kvp.get('dy2', '')
+
+            # closewnd
+            self.closex           = config_kvp.get('closex', '')
+            self.closey           = config_kvp.get('closey', '')
 
             self.clickWait       = config_kvp.get('clickWait', clickWait)
+            if int(self.clickWait) < 375:
+                self.clickWait = 375
 
         if not self.datafile:
             print("### No data file repository defined. Cannot proceed!")
@@ -896,15 +904,21 @@ class TBCapture(object):
         return value
 # ---------------------------------------------------------------------------------------------------------------
     def run(self):
+        hwndThis = pygetwindow.getActiveWindow()
+        
         # 1. click on clan tab
-        pyautogui.click(x=int(self.config.ax), y=int(self.config.ay))
         pyautogui.click(x=int(self.config.ax), y=int(self.config.ay))
         time.sleep(0.5)
         
         # 2. click on tab gift
         pyautogui.click(x=int(self.config.bx), y=int(self.config.by))
-        pyautogui.click(x=int(self.config.bx), y=int(self.config.by))
-        time.sleep(0.5)
+        time.sleep(1.0)
+        
+        # 3. click on tab gift
+        pyautogui.moveTo(x=int(self.config.ex), y=int(self.config.ey))
+        time.sleep(0.75)
+        pyautogui.click(clicks=2, interval=0.5)
+        time.sleep(3.0)
         
         success = True
         while True:
@@ -918,9 +932,11 @@ class TBCapture(object):
                 print("All done!")
                 break
                 
-        pyautogui.click(x=int(self.config.dx), y=int(self.config.dy))
-        pyautogui.click(x=int(self.config.dx), y=int(self.config.dy))
-        time.sleep(0.5)
+        # Triumphal Gifts
+        pyautogui.moveTo(x=int(self.config.dx), y=int(self.config.dy))
+        time.sleep(0.75)
+        pyautogui.click(clicks=2, interval=0.5)
+        time.sleep(3.0)
         
         success = True
         while True:
@@ -933,10 +949,16 @@ class TBCapture(object):
             if totalClicks == -1:
                 print("All done!")
                 break;
-                            
+            
+        # close clan window
+        time.sleep(0.25)
+        pyautogui.moveTo(x=int(self.config.closex), y=int(self.config.closey))
+        pyautogui.click()
+        hwndThis.activate()
         exit(0)
         
     def collect(self, giftcount):
+        noGift = False
         value = int(giftcount)
         #value = 1
         self.totalClicks = 0
@@ -959,7 +981,7 @@ class TBCapture(object):
             capture = self.screen.ocr_core(image)
             print("Done!")
 
-            count = 4 # chests on the screen
+            count = 1 # chests on the screen
 
             # make sure we don't capture more than the specified number of chests
             if self.totalClicks + count > maxClicks:
@@ -1008,7 +1030,7 @@ class TBCapture(object):
         
                 #print("Opening {} chests...".format(clicks))
                 moveX = [0,3,-6,6,-3,0]
-                hwndThis = pygetwindow.getActiveWindow()
+                #hwndThis = pygetwindow.getActiveWindow()
 
                 for i in range(clicks):
                     pyautogui.click(x=int(self.config.mx)+moveX[i], y=int(self.config.my)) # move the cursor slighty to avoid the game screensaver
@@ -1016,9 +1038,9 @@ class TBCapture(object):
                     if clicks > 1:
                         time.sleep(int(self.clickWait) / 1000.0)
                 
-                hwndThis.activate()
+                #hwndThis.activate()
                 print("Done!")
-                time.sleep( 1.33 * int(self.clickWait) / 1000.0 )
+                #time.sleep( 2 * int(self.clickWait) / 1000.0 )
 
             if self.totalClicks >= maxClicks:
                 print("{} chests collected which equals the stipulated number entered when the program started. Stopping.".format(self.totalClicks))
