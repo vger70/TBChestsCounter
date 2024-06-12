@@ -42,6 +42,7 @@ class TBConfig(object):
         else:
             self.datafile        = config_kvp.get('data','')
             self.backup          = config_kvp.get('backup','')
+            self.tempfile        = config_kvp.get('tempfile','')
             self.working_dir     = config_kvp.get("working", '')
             self.archive_dir     = config_kvp.get("archive", '')
             self.final_dir       = config_kvp.get("final", '')
@@ -56,13 +57,7 @@ class TBConfig(object):
             self.y2              = config_kvp.get('y2', '')
             self.mx              = config_kvp.get('mx', '')
             self.my              = config_kvp.get('my', '')
-            
-            # gift counter
-            #self.cx1             = config_kvp.get('cx1', '')
-            #self.cy1             = config_kvp.get('cy1', '')
-            #self.cx2             = config_kvp.get('cx2', '')
-            #self.cy2             = config_kvp.get('cy2', '')
-            
+                        
             # clan click
             self.ax              = config_kvp.get('ax', '')
             self.ay              = config_kvp.get('ay', '')
@@ -77,12 +72,6 @@ class TBConfig(object):
             self.dx              = config_kvp.get('dx', '')
             self.dy              = config_kvp.get('dy', '')
             
-            # triumphal gift counter
-            #self.dx1             = config_kvp.get('dx1', '')
-            #self.dy1             = config_kvp.get('dy1', '')
-            #self.dx2             = config_kvp.get('dx2', '')
-            #self.dy2             = config_kvp.get('dy2', '')
-
             # closewnd
             self.closex           = config_kvp.get('closex', '')
             self.closey           = config_kvp.get('closey', '')
@@ -695,6 +684,7 @@ class TBCapture(object):
         self.wfile = open(workfile, 'w')
         self.sfile = open(config.datafile,'a')
         self.bfile = open(config.backup,'a')
+        self.tfile = open(config.tempfile,'a')
         self.cfile = open(capturefile, 'w')
 
         self.records = list()
@@ -856,6 +846,18 @@ class TBCapture(object):
 
         return success
 # ---------------------------------------------------------------------------------------------------------------
+    def save_first(self):
+        rows = list()
+        chest = self.records[0][0]
+        player = self.records[0][1]
+        source = self.records[0][2]
+        csvrow = chest + "," + player + "," + source + "," + datetime.now().strftime("%d/%m/%Y %H.%M.%S")
+        print("{}".format(csvrow))
+        rows.append(csvrow)
+        self.tfile.writelines(csvrow+"\n")
+        self.tfile.flush()
+        return
+    
     def save_records(self):
     
         index = 0
@@ -877,7 +879,7 @@ class TBCapture(object):
         for row in rows:
             self.sfile.writelines(row+"\n")
             self.wfile.writelines(row+"\n")
-            self.bfile.writelines(row+"\n")
+            self.bfile.writelines(row+"\n") # backup
 
         self.sfile.flush()
         self.wfile.flush()
@@ -886,22 +888,22 @@ class TBCapture(object):
         print("Done!")
 
 # ---------------------------------------------------------------------------------------------------------------
-    def getchestcount(self, cx1, cy1, cx2, cy2):
-        # get gift counter
-        print("Taking a screenshot...")
-        image = self.screen.get_screenshot(cx1, cy1, cx2, cy2)
-        image = self.screen.get_grayscale(numpy.array(image))
-        capture = self.screen.ocr_core(image)
-        print("Capture: " + capture)
-        value = ""
-        
-        for x in capture:
-            if x.isdigit():
-                value = value + str(x)
-                
-        print("Done!")
-        
-        return value
+    #def getchestcount(self, cx1, cy1, cx2, cy2):
+    #    # get gift counter
+    #    print("Taking a screenshot...")
+    #    image = self.screen.get_screenshot(cx1, cy1, cx2, cy2)
+    #    image = self.screen.get_grayscale(numpy.array(image))
+    #    capture = self.screen.ocr_core(image)
+    #    print("Capture: " + capture)
+    #    value = ""
+    #    
+    #    for x in capture:
+    #        if x.isdigit():
+    #            value = value + str(x)
+    #            
+    #    print("Done!")
+    #    
+    #    return value
 # ---------------------------------------------------------------------------------------------------------------
     def run(self):
         hwndThis = pygetwindow.getActiveWindow()
@@ -917,39 +919,57 @@ class TBCapture(object):
         # 3. click on tab gift
         pyautogui.moveTo(x=int(self.config.ex), y=int(self.config.ey))
         time.sleep(0.75)
-        pyautogui.click(clicks=2, interval=0.5)
+        pyautogui.click() #clicks=2, interval=0.5
         time.sleep(3.0)
         
+        i = 0
+        n = 1
+        moveX = [0,3,-6,6,-3,0] #move the cursor slighty to avoid the game screensaver
         success = True
         while True:
-            n = 1
+            pyautogui.moveTo(x=int(self.config.mx)+moveX[i], y=int(self.config.my))
             success, totalClicks = self.collect(n)
             
             if not success and totalClicks != -1:
                 print("Something wet wrong. Retry later")
+                break
                 
-            if totalClicks == -1:
+            if totalClicks == -1: # No gifts
                 print("All done!")
                 break
+            else:
+                time.sleep(0.25)
+                
+            i += 1
+            if i == 6:
+                i = 0
                 
         # Triumphal Gifts
         pyautogui.moveTo(x=int(self.config.dx), y=int(self.config.dy))
         time.sleep(0.75)
-        pyautogui.click(clicks=2, interval=0.5)
+        pyautogui.click() #clicks=2, interval=0.5
         time.sleep(3.0)
         
+        i = 0
         success = True
         while True:
-            n = 1
+            pyautogui.moveTo(x=int(self.config.mx)+moveX[i], y=int(self.config.my))
             success, totalClicks = self.collect(n)
             
             if not success and totalClicks != -1:
                 print("Something wet wrong. Retry later")
+                break
             
-            if totalClicks == -1:
+            if totalClicks == -1: # No gifts
                 print("All done!")
                 break;
-            
+            else:
+                time.sleep(0.25)
+                
+            i += 1
+            if i == 6:
+                i = 0
+                
         # close clan window
         time.sleep(0.25)
         pyautogui.moveTo(x=int(self.config.closex), y=int(self.config.closey))
@@ -993,7 +1013,7 @@ class TBCapture(object):
             if len(self.records) < count and len(self.records) > 0: # did we capture less than the specified number?
                 print( "### Only {} chests were captured".format(len(self.records)))
 
-            print("Validate Capture Done!")
+            print("Capture validation Done!")
 
             if success and len(self.records) == 0: # success but nothing was captured so stop
                 print("{} chests collected out of the stipulated {}. Stopping.".format(self.totalClicks, maxClicks))
@@ -1029,11 +1049,11 @@ class TBCapture(object):
                     clicks = maxClicks - self.totalClicks
         
                 #print("Opening {} chests...".format(clicks))
-                moveX = [0,3,-6,6,-3,0]
+                #moveX = [0,3,-6,6,-3,0]
                 #hwndThis = pygetwindow.getActiveWindow()
 
                 for i in range(clicks):
-                    pyautogui.click(x=int(self.config.mx)+moveX[i], y=int(self.config.my)) # move the cursor slighty to avoid the game screensaver
+                    pyautogui.click() # x=int(self.config.mx)+moveX[i], y=int(self.config.my) move the cursor slighty to avoid the game screensaver
                     self.totalClicks += 1
                     if clicks > 1:
                         time.sleep(int(self.clickWait) / 1000.0)
