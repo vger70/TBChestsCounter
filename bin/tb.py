@@ -42,7 +42,6 @@ class TBConfig(object):
         else:
             self.datafile        = config_kvp.get('data','')
             self.backup          = config_kvp.get('backup','')
-            self.tempfile        = config_kvp.get('tempfile','')
             self.working_dir     = config_kvp.get("working", '')
             self.archive_dir     = config_kvp.get("archive", '')
             self.final_dir       = config_kvp.get("final", '')
@@ -51,10 +50,14 @@ class TBConfig(object):
             self.quality_file    = config_kvp.get('quality', '')
             self.score_file      = config_kvp.get('score', '')
             self.fix_ocr_file    = config_kvp.get('fix_ocr', '')
+            
+            # capture area
             self.x1              = config_kvp.get('x1', '')
             self.y1              = config_kvp.get('y1', '')
             self.x2              = config_kvp.get('x2', '')
             self.y2              = config_kvp.get('y2', '')
+            
+            # open chest button
             self.mx              = config_kvp.get('mx', '')
             self.my              = config_kvp.get('my', '')
                         
@@ -62,9 +65,11 @@ class TBConfig(object):
             self.ax              = config_kvp.get('ax', '')
             self.ay              = config_kvp.get('ay', '')
             
-            # gift tab
+            # left gift tab
             self.bx              = config_kvp.get('bx', '')
             self.by              = config_kvp.get('by', '')
+            
+            # gift tab header
             self.ex              = config_kvp.get('ex', '')
             self.ey              = config_kvp.get('ey', '')
             
@@ -75,6 +80,13 @@ class TBConfig(object):
             # closewnd
             self.closex           = config_kvp.get('closex', '')
             self.closey           = config_kvp.get('closey', '')
+
+            # clan help
+            self.collect_help     = config_kvp.get('collect_help', '0')
+            self.helpx            = config_kvp.get('helpx', '')
+            self.helpy            = config_kvp.get('helpy', '')
+            self.helpbx           = config_kvp.get('helpbx', '')
+            self.helpby           = config_kvp.get('helpby', '')
 
             self.clickWait       = config_kvp.get('clickWait', clickWait)
             if int(self.clickWait) < 375:
@@ -168,14 +180,6 @@ class TBPlayer(object):
 
 # -------------------------------------------------------------------------------
     def save(self):
-        #if self.player_set_changed and self.player_file:
-
-        #    while True:
-        #        save = input("\n### Player information has been updated during processing. Do you want to save it to the same file (<Enter>/n) ? ")
-        #        if len(save) == 0 or save == "y" or save == "n":
-        #            break
-
-        #    if len(save) == 0 or save == "y":
         with open(self.player_file,'w') as pfp:
             sorted_players = sorted(self.player_set)
             for player in sorted_players:
@@ -684,7 +688,6 @@ class TBCapture(object):
         self.wfile = open(workfile, 'w')
         self.sfile = open(config.datafile,'a')
         self.bfile = open(config.backup,'a')
-        self.tfile = open(config.tempfile,'a')
         self.cfile = open(capturefile, 'w')
 
         self.records = list()
@@ -970,10 +973,21 @@ class TBCapture(object):
             if i == 6:
                 i = 0
                 
+        time.sleep(0.5)
+        
+        # collect help
+        if int(self.config.collect_help) == 1:
+            pyautogui.moveTo(x=int(self.config.helpx), y=int(self.config.helpy))
+            pyautogui.click()
+            time.sleep(0.5)
+            pyautogui.moveTo(x=int(self.config.helpbx), y=int(self.config.helpby))
+            pyautogui.click()
+            time.sleep(1.0)
+            
         # close clan window
-        time.sleep(0.25)
         pyautogui.moveTo(x=int(self.config.closex), y=int(self.config.closey))
         pyautogui.click()
+        
         hwndThis.activate()
         exit(0)
         
