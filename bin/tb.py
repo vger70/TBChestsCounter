@@ -38,7 +38,7 @@ class TBConfig(object):
                     config_kvp[kvp[0].strip()] = kvp[1].strip()
         except:
             print("### FATAL ERROR: Unable to open or read the configuration file: {}").format(config_file)
-            exit()
+            exit(-1)
         else:
             self.datafile        = config_kvp.get('data','')
             self.backup          = config_kvp.get('backup','')
@@ -94,7 +94,7 @@ class TBConfig(object):
 
         if not self.datafile:
             print("### No data file repository defined. Cannot proceed!")
-            exit()
+            exit(-1)
 # TBConfig------------------------------------------------------------------------------------------------------
 
 # TBScreen ------------------------------------------------------------------------------------------------------
@@ -193,21 +193,18 @@ class TBPlayer(object):
 
                 pfp.writelines(player_line)
 
-        print("Updated player information has been saved to {}".format(self.player_file))
+        #print("Updated player information has been saved to {}".format(self.player_file))
 
 # -------------------------------------------------------------------------------
     def validate(self, player, line):
+        global fuzzy
         
         # assume success...
         success = True
-        fuzzy = True
+        #fuzzy = False
 
         if player in self.player_set: # avoid the error when the record contains only a player name but one that is correct
-            print("Record is malformed but consists of a correct player name {} so processing can continue.".format(player))
-
-            if player == "ARES":
-                player = "ARES_"
-
+            print("Record is malformed but consists of a correct player name {} so processing can continue.".format(player))                
         else:
             splitter = ""
 
@@ -241,11 +238,7 @@ class TBPlayer(object):
         # handle OCR issues with player names
         if player.endswith('.'):
             player = player.replace('.','')
-
-        if player == "ARES":
-            player = "ARES_"
-            fuzzy = False
-
+            
         # player name not in players file or malformed by OCR
         if player not in self.player_set:
 
@@ -264,7 +257,6 @@ class TBPlayer(object):
                 if fuzzy:
                     print("Player {} mapped to {} triggered by FUZZY MATCH: {}".format(player, best_string, best_score))
                     player = best_string # set player to the best matched string
-
             else:
                 # look in alias map
                 tmp_player = self.player_kvp.get(player.lower())
@@ -843,7 +835,8 @@ class TBCapture(object):
                     success = False
                     break
             except:
-                print("*** EXCEPTION: Chest ({}): {}, From: {}, Source: {}".format( validate_line_count, chest, player, source))
+                if chest != "No gifts":
+                    print("*** EXCEPTION: Chest ({}): {}, From: {}, Source: {}".format( validate_line_count, chest, player, source))
                 success = False
                 break
 
@@ -877,7 +870,7 @@ class TBCapture(object):
 
             index += 1
 
-        print("Saving records...")
+        #print("Saving records...")
 
         for row in rows:
             self.sfile.writelines(row+"\n")
@@ -888,47 +881,35 @@ class TBCapture(object):
         self.wfile.flush()
         self.bfile.flush()
 
-        print("Done!")
+        #print("Done!")
 
 # ---------------------------------------------------------------------------------------------------------------
-    #def getchestcount(self, cx1, cy1, cx2, cy2):
-    #    # get gift counter
-    #    print("Taking a screenshot...")
-    #    image = self.screen.get_screenshot(cx1, cy1, cx2, cy2)
-    #    image = self.screen.get_grayscale(numpy.array(image))
-    #    capture = self.screen.ocr_core(image)
-    #    print("Capture: " + capture)
-    #    value = ""
-    #    
-    #    for x in capture:
-    #        if x.isdigit():
-    #            value = value + str(x)
-    #            
-    #    print("Done!")
-    #    
-    #    return value
-# ---------------------------------------------------------------------------------------------------------------
     def run(self):
+        self.cestCounter = 0
+        
         hwndThis = pygetwindow.getActiveWindow()
         
         # 1. click on clan tab
-        pyautogui.click(x=int(self.config.ax), y=int(self.config.ay))
-        time.sleep(0.5)
+        pyautogui.moveTo(x=int(self.config.ax), y=int(self.config.ay))
+        time.sleep(1.0)
+        pyautogui.click()
         
         # 2. click on tab gift
-        pyautogui.click(x=int(self.config.bx), y=int(self.config.by))
-        time.sleep(1.0)
+        pyautogui.moveTo(x=int(self.config.bx), y=int(self.config.by))
+        time.sleep(2.0)
+        pyautogui.click()
         
         # 3. click on tab gift
         pyautogui.moveTo(x=int(self.config.ex), y=int(self.config.ey))
-        time.sleep(0.75)
-        pyautogui.click() #clicks=2, interval=0.5
+        time.sleep(1.0)
+        pyautogui.click()
         time.sleep(3.0)
         
         i = 0
         n = 1
         moveX = [0,3,-6,6,-3,0] #move the cursor slighty to avoid the game screensaver
         success = True
+        print("Collecting Gifts...")
         while True:
             pyautogui.moveTo(x=int(self.config.mx)+moveX[i], y=int(self.config.my))
             success, totalClicks = self.collect(n)
@@ -938,9 +919,10 @@ class TBCapture(object):
                 break
                 
             if totalClicks == -1: # No gifts
-                print("All done!")
+                #print("All done!")
                 break
             else:
+                self.cestCounter += 1
                 time.sleep(0.25)
                 
             i += 1
@@ -955,6 +937,7 @@ class TBCapture(object):
         
         i = 0
         success = True
+        print("Collecting Triunphal Gifts...")
         while True:
             pyautogui.moveTo(x=int(self.config.mx)+moveX[i], y=int(self.config.my))
             success, totalClicks = self.collect(n)
@@ -964,9 +947,10 @@ class TBCapture(object):
                 break
             
             if totalClicks == -1: # No gifts
-                print("All done!")
-                break;
+                #print("All done!")
+                break
             else:
+                self.cestCounter += 1
                 time.sleep(0.25)
                 
             i += 1
@@ -975,7 +959,7 @@ class TBCapture(object):
                 
         time.sleep(0.5)
         
-        # collect help
+        # help all
         if int(self.config.collect_help) == 1:
             pyautogui.moveTo(x=int(self.config.helpx), y=int(self.config.helpy))
             pyautogui.click()
@@ -987,33 +971,35 @@ class TBCapture(object):
         # close clan window
         pyautogui.moveTo(x=int(self.config.closex), y=int(self.config.closey))
         pyautogui.click()
+        pyautogui.hotkey('esc')
         
         hwndThis.activate()
-        exit(0)
+            
+        print("Collected {} chests.".format(self.cestCounter))
+        exit(self.cestCounter)
         
     def collect(self, giftcount):
         noGift = False
         value = int(giftcount)
-        #value = 1
         self.totalClicks = 0
         
-        print("Max Chests to open: {}".format(value))
+        #print("Max Chests to open: {}".format(value))
 
         maxClicks = int(value)
 
         while True:
 
-            print("Taking a screenshot...")
+            #print("Taking a screenshot...")
             image = self.screen.get_screenshot(self.config.x1, self.config.y1, self.config.x2, self.config.y2)
-            print("Done!")
+            #print("Done!")
 
-            print("Some image processing...")
+            #print("Some image processing...")
             image = self.screen.get_grayscale(numpy.array(image))
-            print("Done!")
+            #print("Done!")
 
-            print("Performing OCR analysis...")
+            #print("Performing OCR analysis...")
             capture = self.screen.ocr_core(image)
-            print("Done!")
+            #print("Done!")
 
             count = 1 # chests on the screen
 
@@ -1021,16 +1007,16 @@ class TBCapture(object):
             if self.totalClicks + count > maxClicks:
                 count = maxClicks - self.totalClicks
 
-            print("Processing chests from the capture...")
+            #print("Processing chests from the capture...")
             success = self.validate_capture(capture, count)
             
-            if len(self.records) < count and len(self.records) > 0: # did we capture less than the specified number?
-                print( "### Only {} chests were captured".format(len(self.records)))
+            #if len(self.records) < count and len(self.records) > 0: # did we capture less than the specified number?
+            #    print( "### Only {} chests were captured".format(len(self.records)))
 
-            print("Capture validation Done!")
+            #print("Capture validation Done!")
 
             if success and len(self.records) == 0: # success but nothing was captured so stop
-                print("{} chests collected out of the stipulated {}. Stopping.".format(self.totalClicks, maxClicks))
+                #print("{} chests collected out of the stipulated {}. Stopping.".format(self.totalClicks, maxClicks))
                 break
 
             proceed = ""
@@ -1039,22 +1025,27 @@ class TBCapture(object):
             if not success:
                 while True:
                     if capture == "No gifts\n":
-                        print("Done! Exiting")
+                        print("No more chests to collect!")
                         proceed = "3"
                         noGift = True
                         break
                     
-                    proceed = input("*** ERROR: The screen capture could not be validated. What do you want to do (3=stop processing) ? ")
-            
-                    if proceed == "4": # for testing purpouse
-                        print(capture)
+                    proceed = "0"
+                    print("*** ERROR: The screen capture could not be validated.")
+                    #proceed = input("*** ERROR: The screen capture could not be validated. What do you want to do (0=stop processing) ? ")
+                    #if proceed == "4": # for testing purpouse
+                    #    print(capture)
 
-                    if proceed in ["3"]:
+                    if proceed in ["0","3"]:
                         break
 
             if proceed == "3":
                 break
-
+            elif proceed == "0":
+                print(f"Collected {self.cestCounter} chests.")
+                #exit(self.cestCounter)
+                exit(-2)
+                
             if success:
                 self.save_records()
                 clicks = len(self.records) # dont click more than the number of chests captured by the OCR
@@ -1062,22 +1053,14 @@ class TBCapture(object):
                 if self.totalClicks + clicks > maxClicks:
                     clicks = maxClicks - self.totalClicks
         
-                #print("Opening {} chests...".format(clicks))
-                #moveX = [0,3,-6,6,-3,0]
-                #hwndThis = pygetwindow.getActiveWindow()
-
                 for i in range(clicks):
-                    pyautogui.click() # x=int(self.config.mx)+moveX[i], y=int(self.config.my) move the cursor slighty to avoid the game screensaver
+                    pyautogui.click() # collect chest
                     self.totalClicks += 1
                     if clicks > 1:
                         time.sleep(int(self.clickWait) / 1000.0)
                 
-                #hwndThis.activate()
-                print("Done!")
-                #time.sleep( 2 * int(self.clickWait) / 1000.0 )
-
             if self.totalClicks >= maxClicks:
-                print("{} chests collected which equals the stipulated number entered when the program started. Stopping.".format(self.totalClicks))
+                #print("{} chests collected which equals the stipulated number entered when the program started. Stopping.".format(self.totalClicks))
                 break
 
         self.player_def.save()
@@ -1218,7 +1201,8 @@ class TBProcess(object):
                         success = False
                         break
                 except:
-                        print("*** EXCEPTION: Chest ({}/{}): {}, From: {}, Source: {}".format( parsed_line_count, source_line_count, chest, player, source))
+                        if chest != "No gifts":
+                            print("*** EXCEPTION: Chest ({}/{}): {}, From: {}, Source: {}".format( parsed_line_count, source_line_count, chest, player, source))
                         success = False
                         break
                
@@ -1518,6 +1502,7 @@ parser.add_argument("--process", action="store_true", help="process captured che
 # only used by TBCapture 
 parser.add_argument("--clickWait", help="time to wait between auto-clicks", default="300")
 parser.add_argument("--chests", help="maximum number of chests to collect", default="2000")
+parser.add_argument("--fuzzy", action="store_true", help="fuzzy logic on validate chest",default=False)
 
 # only used by TBProcess
 parser.add_argument("--date", help="optional processing date, default is current date")
@@ -1528,8 +1513,9 @@ parser.add_argument("--summary", action="store_true", help="only generate a summ
 parser.add_argument("--citadels", action="store_true", help="only generate a summary from the processed files in the /final directory")
 parser.add_argument("--skip_empty", action="store_true", help="skip players with 0 value in the summary, i.e. don't print a row in the summary file")
 
-
 args = parser.parse_args()
+
+fuzzy = args.fuzzy
 
 config = TBConfig(args.config, args.clickWait)
 
